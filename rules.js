@@ -516,8 +516,8 @@ function zeros(dimensions) { //http://stackoverflow.com/questions/3689903/how-to
 
 function init() {
 	var s = new CanvasState(document.getElementById('canvas1'));
-	document.onkeydown=keypress;
-	document.onkeyup=keyup;
+	$(document).keydown(keypress);
+	$(document).keyup(keyup);
 }
 
 // Now go make something amazing!
