@@ -3,11 +3,7 @@ DanceForMe
 
 todo list
 
-hp counter?
-
 map? 
-
-lose a life? 
 
 actual death? --meh, can be added when menus?
 
@@ -22,4 +18,4 @@ known bugs
 
 if two players are jumping on one another and the top player stops before the bottom player, the top player will hang in the air. 
 
-something causes the characters to flash
+something causes the characters to flash- has this been fixed?
