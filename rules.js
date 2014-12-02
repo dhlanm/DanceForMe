@@ -1,23 +1,10 @@
 // Credit to Simon Sarris for initial framework. 
 // www.simonsarris.com
 
-//todo list
-//hp counter?
-//map? 
-//lose a life? 
-//actual death? --meh, can be added when menus?
-//pseudosocket? 
-//RULES THAT MATTER!
-//remember, each rule gets its own rulebreak function. How to do this? just for each rule set .rulebreak(), easy. rulelist.js should be its own file. 
-
-
-//known bugs
-//if two players are jumping on one another and the top player stops before the bottom player, the top player will hang in the air. 
-
 var myState;
 var jumpStr=10;		   //default to 10
 var maxProj=3;		   //default to 3
-var playerSpeed=5;	 //less than 20 for no bugs. default to 5
+var playerSpeed=5;	   //default to 5
 var deathfloattime=40; //time the player can hang in the air at their starting spot before falling
 var maxhp=5;
 var maxlives=5;
@@ -47,7 +34,6 @@ shapeProtoGen = function(type) {
 			this.jumping=true;
 		}
 		p.leftkeypress = function() {
-			this.xto-=20;
 			this.direction='left';
 			this.left=true;
 		}
@@ -55,7 +41,6 @@ shapeProtoGen = function(type) {
 			//go thru platform?
 		}
 		p.rightkeypress = function() {
-			this.xto+=20;
 			this.direction='right';
 			this.right=true;
 		}
@@ -80,11 +65,9 @@ shapeProtoGen = function(type) {
 			this.jumping=false;
 		}
 		p.leftkeyup = function() {
-			this.xto = this.x;
 			this.left=false;
 		}
 		p.rightkeyup = function() {
-			this.xto = this.x;
 			this.right=false;
 		}
 	}
@@ -99,7 +82,6 @@ Shape = function(x, y, w, h, fill, mobile, speed) {
 	this.fill = fill || '#AAAAAA';
 	this.speed = speed || 5; 
 	this.mobile = mobile || false; 
-	this.xto = this.x;
 }
 Shape.prototype = shapeProtoGen("shape")
 
@@ -124,7 +106,6 @@ Player = function(x, y, w, h, fill, speed, player) {
 	this.fill = fill || '#AAAAAA';
 	this.speed = speed || 5; 
 	this.player = player || 0;
-	this.xto = this.x;
 	this.yv = 0;
 	this.ya = .05*this.h;
 	this.lastx = x;
@@ -207,7 +188,7 @@ function CanvasState(canvas) {
 	this.drawInterval = setInterval(function() { myState.draw(); }, myState.drawFrequency);
 
 	this.physFrequency = 30;
-	this.physInterval = setInterval(function() { myState.update(); }, myState.physFrequency); 
+	this.physInterval = setInterval(function() { myState.update(myState.physFrequency/1000); }, myState.physFrequency); 
 
 }
 
@@ -245,10 +226,6 @@ CanvasState.prototype.update = function(dt) {
 	var projectiles = this.projectiles
 	var players = this.players;
 	for(var i=0; i<players.length; i++) {
-		if(players[i].left)
-			players[i].xto-=20;
-		if(players[i].right)
-			players[i].xto+=20;
 		if(players[i].jumping) {
 			if(players[i].yv==0 && players[i].ya==0)
 				players[i].yv-=jumpStr;
@@ -267,14 +244,12 @@ CanvasState.prototype.update = function(dt) {
 			shape.y+=shape.yv;
 			if(shape.yv>19)
 				shape.yv=19; //no falling through blocks!
-			if(shape.x>shape.xto) {
+			if(shape.left) {
 				shape.x-=shape.speed;
 			}
-			else if(shape.x<shape.xto) {
+			else if(shape.right) {
 				shape.x+=shape.speed;
 			}
-			if(shape.yv==0 && shape.ya==0 && shape.x==shape.xto)
-				continue
 			for (var j = 0; j < players.length+collidables.length; j++) {
 				if(j>=players.length)
 					collider = collidables[j-players.length];
@@ -299,7 +274,6 @@ CanvasState.prototype.update = function(dt) {
 								shape.x=collider.x-shape.w;
 							else
 								shape.x=collider.x+collider.w;
-							shape.xto=shape.x;
 						}
 					}
 					
@@ -321,11 +295,9 @@ CanvasState.prototype.update = function(dt) {
 			}
 			if(shape.x+shape.w>=this.width) {
 				shape.x=this.width-shape.w;
-				shape.xto=shape.x;
 			}
 			if(shape.x<0) {
 				shape.x=0;
-				shape.xto=shape.x;
 			}
 			if(!incoll) {
 				shape.ya=.05*shape.h;
@@ -374,7 +346,6 @@ CanvasState.prototype.update = function(dt) {
 				players[i].lives--;
 				players[i].hp = 5;
 				players[i].x=players[i].startx;
-				players[i].xto=players[i].x;
 				players[i].y=players[i].starty;
 				players[i].mobile=false;
 				players[i].floatticks=deathfloattime;
@@ -402,7 +373,7 @@ CanvasState.prototype.draw = function() {
 	drawobjects(this.collidables)
 	drawobjects(this.noncollidables)
 	drawobjects(this.projectiles)
-	drawobjects(this. players)
+	drawobjects(this.players)
 	//console.log(players[0].ya);
 }
 drawobjects = function (array) {
@@ -465,8 +436,6 @@ function keypress(e) {
 		player0.rightkeypress();
 	if(e.keyCode==32) //space
 		player0.fire();
-	/*if(e.keyCode==16) //shift	
-		player0.fireleft();*/
 	if(e.keyCode==37) //left
 		player1.leftkeypress();
 	if(e.keyCode==38) //up
@@ -475,10 +444,8 @@ function keypress(e) {
 		player1.rightkeypress();
 	if(e.keyCode==40) //down
 		player1.down();
-	if(e.keyCode==96) //numpad0
+	if(e.keyCode==13) //enter
 		player1.fire()
-	/*if(e.keyCode==13) //enter
-		player1.fireleft();*/
 }
 function keyup(e) {
 	player0=myState.players[0];
@@ -526,5 +493,3 @@ function init() {
 	$(document).keydown(keypress);
 	$(document).keyup(keyup);
 }
-
-// Now go make something amazing!
