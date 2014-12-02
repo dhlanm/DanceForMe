@@ -2,12 +2,19 @@ DanceForMe
 ==========
 
 todo list
+
 hp counter?
+
 map? 
+
 lose a life? 
+
 actual death? --meh, can be added when menus?
+
 pseudosocket? 
+
 RULES THAT MATTER!
+
 remember, each rule gets its own rulebreak function. How to do this? just for each rule set .rulebreak(), easy. rulelist.js should be its own file. 
 
 
