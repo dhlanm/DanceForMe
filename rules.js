@@ -203,8 +203,12 @@ function CanvasState(canvas) {
 	this.blitHp(this.players[1]);
 	this.addCollidable(new Shape(300,550,80,20,'rgba(0,0,0,.6)'));
 	
-	this.interval = 30;
-	setInterval(function() { myState.draw(); }, myState.interval);
+	this.drawFrequency = 30;
+	this.drawInterval = setInterval(function() { myState.draw(); }, myState.drawFrequency);
+
+	this.physFrequency = 30;
+	this.physInterval = setInterval(function() { myState.update(); }, myState.physFrequency); 
+
 }
 
 CanvasState.prototype.addCollidable = function(shape) {
@@ -234,13 +238,12 @@ CanvasState.prototype.clear = function() {
 }
 
 
-CanvasState.prototype.draw = function() {
+CanvasState.prototype.update = function(dt) {
 	var ctx = this.ctx;
 	var collidables = this.collidables;
 	var noncollidables = this.noncollidables;
 	var projectiles = this.projectiles
 	var players = this.players;
-	this.clear();
 	for(var i=0; i<players.length; i++) {
 		if(players[i].left)
 			players[i].xto-=20;
@@ -393,13 +396,17 @@ CanvasState.prototype.draw = function() {
 			players[i].floatticks--;
 		}
 	}
-	drawobjects(collidables, collidables.length)
-	drawobjects(noncollidables, noncollidables.length)
-	drawobjects(projectiles, projectiles.length)
-	drawobjects(players, players.length)
+}
+CanvasState.prototype.draw = function() {
+	this.clear();
+	drawobjects(this.collidables)
+	drawobjects(this.noncollidables)
+	drawobjects(this.projectiles)
+	drawobjects(this. players)
 	//console.log(players[0].ya);
 }
-drawobjects = function (array, length) {
+drawobjects = function (array) {
+	var length = array.length;
 	for (var i = 0; i < length; i++) {
 		var shape = array[i];
 		// We can skip the drawing of elements that have moved off the screen:
