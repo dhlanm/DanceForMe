@@ -8,6 +8,9 @@ var playerSpeed=5;	   //default to 5
 var deathfloattime=40; //time the player can hang in the air at their starting spot before falling
 var maxhp=5;
 var maxlives=5;
+var subscribedEvents = {
+	'jump': [],
+}
 
 shapeProtoGen = function(type) {
 	p = {
@@ -29,8 +32,10 @@ shapeProtoGen = function(type) {
 	}
 	if(type == "player") {
 		p.willjump = function() {
-			if(this.yv==0 && this.ya==0)
+			if(this.yv==0 && this.ya==0) {
 				this.yv-=jumpStr;
+				sendEvent('jump', p.player);
+			}
 			this.jumping=true;
 		}
 		p.leftkeypress = function() {
@@ -189,6 +194,8 @@ function CanvasState(canvas) {
 
 	this.physFrequency = 30;
 	this.physInterval = setInterval(function() { myState.update(myState.physFrequency/1000); }, myState.physFrequency); 
+	
+	pushRule();
 
 }
 
@@ -227,8 +234,10 @@ CanvasState.prototype.update = function(dt) {
 	var players = this.players;
 	for(var i=0; i<players.length; i++) {
 		if(players[i].jumping) {
-			if(players[i].yv==0 && players[i].ya==0)
+			if(players[i].yv==0 && players[i].ya==0) {
 				players[i].yv-=jumpStr;
+				sendEvent('jump', p.player);
+			}
 		}
 	}
 	for (var i = 0; i < players.length+collidables.length; i++) {
@@ -394,6 +403,25 @@ drawobjects = function (array) {
 	}
 }
 
+sendEvent = function(event, player) {
+	if(subscribedEvents[event]) {
+		var eList=subscribedEvents[event];
+		for(var i=0; i<eList.length; i++) {
+			if(eList[i](event, player)) {
+				console.log("Rule Broken!");
+			}
+		}
+	}
+}
+
+pushRule = function() {
+	rule = getRule();
+	console.log(rule, rule.sublist); 
+	for(var i=0; i<rule.sublist.length; i++) { 
+		subscribedEvents[rule.sublist[i]].push(rule.rulebreak);
+	}
+}
+
 // Creates an object with x and y defined, set to the mouse position relative to the state's canvas
 // If you wanna be super-correct this can be tricky, we have to worry about padding and borders
 CanvasState.prototype.getMouse = function(e) {
@@ -469,24 +497,6 @@ function getRotationPoint(x, y, x0, y0, phi) {
 	return [xp,yp]; 
 }
 
-function sleep(milliseconds) { //http://stackoverflow.com/questions/16873323/javascript-sleep-wait-before-continuing
-	var start = new Date().getTime();
-	for (var i = 0; i < 1e7; i++) {
-		if ((new Date().getTime() - start) > milliseconds){
-			break;
-		}
-	}
-}
-
-function zeros(dimensions) { //http://stackoverflow.com/questions/3689903/how-to-create-a-2d-array-of-zeroes-in-javascript
-	var array = [];
-
-	for (var i = 0; i < dimensions[0]; ++i) {
-		array.push(dimensions.length == 1 ? 0 : zeros(dimensions.slice(1)));
-	}
-
-	return array;
-}
 
 function init() {
 	var s = new CanvasState(document.getElementById('canvas1'));
