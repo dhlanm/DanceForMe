@@ -177,6 +177,7 @@ function CanvasState(canvas) {
 	this.projectiles = [];
 	this.noncollidables = [];
 	this.players = [];
+	this.ruleText = '';
 	
 	myState = this;
 	var sX;
@@ -211,6 +212,9 @@ CanvasState.prototype.addPlayer = function(shape) {
 CanvasState.prototype.addNonCollidable = function(shape) {
 	this.noncollidables.push(shape);
 }
+CanvasState.prototype.addRuleText = function(text) {
+	this.ruleText = { text: text, alpha: 1 };
+} 
 
 CanvasState.prototype.blitHp = function(player) {
 	for(var i=0; i<player.hp; i++) {
@@ -383,6 +387,13 @@ CanvasState.prototype.draw = function() {
 	drawobjects(this.noncollidables)
 	drawobjects(this.projectiles)
 	drawobjects(this.players)
+	if(this.ruleText && this.ruleText.alpha>0) {
+		this.ctx.textAlign="center";
+		this.ctx.font = "italic 20pt Arial";
+		this.ctx.fillStyle= 'rgba(0,0,0,'+String(this.ruleText.alpha)+')';
+		this.ctx.fillText(this.ruleText.text, 500, 300);
+		this.ruleText.alpha-=.005;
+	}
 	//console.log(players[0].ya);
 }
 drawobjects = function (array) {
@@ -420,6 +431,7 @@ pushRule = function() {
 	for(var i=0; i<rule.sublist.length; i++) { 
 		subscribedEvents[rule.sublist[i]].push(rule.rulebreak);
 	}
+	myState.addRuleText(rule.flavortext);
 }
 
 // Creates an object with x and y defined, set to the mouse position relative to the state's canvas
