@@ -4,10 +4,12 @@
 var myState;
 var jumpStr=10;		   //default to 10
 var maxProj=3;		   //default to 3
-var playerSpeed=5;	   //default to 5
+var playerSpeed=8;	   //default to 5
 var deathfloattime=40; //time the player can hang in the air at their starting spot before falling
 var maxhp=5;
 var maxlives=5;
+var ruleFrequency=10; //time in seconds
+var gracePeriod=1; //time in seconds
 var subscribedEvents = {
 	'jump': [],
 }
@@ -185,10 +187,12 @@ function CanvasState(canvas) {
 	//fixes a problem where double clicking causes text to get selected on the canvas
 	canvas.addEventListener('selectstart', function(e) { e.preventDefault(); return false; }, false);
 	this.addPlayer(new Player(10,100,20,20,'rgba(255,0,0,.6)', playerSpeed, 0));
-	this.addPlayer(new Player(500,100,20,20,'rgba(0,0,255,.6)', playerSpeed, 1));
+	this.addPlayer(new Player(canvas.width-10,100,20,20,'rgba(0,0,255,.6)', playerSpeed, 1));
 	this.blitHp(this.players[0]);
 	this.blitHp(this.players[1]);
-	this.addCollidable(new Shape(300,550,80,20,'rgba(0,0,0,.6)'));
+	this.addCollidable(new Shape(370,550,80,20,'rgba(0,0,0,.6)'));
+	this.addCollidable(new Shape(460,500,80,20,'rgba(0,0,0,.6)'));
+	this.addCollidable(new Shape(550,550,80,20,'rgba(0,0,0,.6)'));
 	
 	this.drawFrequency = 30;
 	this.drawInterval = setInterval(function() { myState.draw(); }, myState.drawFrequency);
@@ -196,7 +200,9 @@ function CanvasState(canvas) {
 	this.physFrequency = 30;
 	this.physInterval = setInterval(function() { myState.update(myState.physFrequency/1000); }, myState.physFrequency); 
 	
-	pushRule();
+	this.ruleFrequency = ruleFrequency*1000;
+	this.ruleInterval = setInterval(function() { pushRule(); }, myState.ruleFrequency);
+	//pushRule();
 
 }
 
@@ -391,7 +397,7 @@ CanvasState.prototype.draw = function() {
 		this.ctx.textAlign="center";
 		this.ctx.font = "italic 20pt Arial";
 		this.ctx.fillStyle= 'rgba(0,0,0,'+String(this.ruleText.alpha)+')';
-		this.ctx.fillText(this.ruleText.text, 500, 300);
+		this.ctx.fillText(this.ruleText.text, this.canvas.width/2, this.canvas.height/2);
 		this.ruleText.alpha-=.005;
 	}
 	//console.log(players[0].ya);
@@ -426,12 +432,16 @@ sendEvent = function(event, player) {
 }
 
 pushRule = function() {
-	rule = getRule();
+	var rule = getRule();
 	console.log(rule, rule.sublist); 
-	for(var i=0; i<rule.sublist.length; i++) { 
-		subscribedEvents[rule.sublist[i]].push(rule.rulebreak);
-	}
 	myState.addRuleText(rule.flavortext);
+	grace = setInterval( function() { 
+		for(var i=0; i<rule.sublist.length; i++) { 
+			subscribedEvents[rule.sublist[i]].push(rule.rulebreak);
+		}
+		clearInterval(grace);
+	}, (rule.gracePeriod || gracePeriod)*1000);
+	
 }
 
 // Creates an object with x and y defined, set to the mouse position relative to the state's canvas
