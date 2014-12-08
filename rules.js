@@ -5,11 +5,15 @@ var myState;
 var jumpStr=10;		   //default to 10
 var maxProj=3;		   //default to 3
 var playerSpeed=8;	   //default to 5
+var projSpeed=10;
 var deathfloattime=40; //time the player can hang in the air at their starting spot before falling
 var maxhp=5;
 var maxlives=5;
-var ruleFrequency=10; //time in seconds
-var gracePeriod=1; //time in seconds
+var ruleFrequency=10;  //time in seconds between new rules being added
+var gracePeriod=1;     //time in seconds before shown rules take effect
+var stdIntval=30;      //modifier to dt to standardize speeds to what was set at 30ms per tick
+var physFrequency=30;  //ms
+var drawFrequency=30;  //ms
 var subscribedEvents = {
 	'jump': [],
 }
@@ -56,14 +60,14 @@ shapeProtoGen = function(type) {
 			else this.fireright();
 		}
 		p.fireright = function() {
-			if(this.projectiles < maxProj) {
-				myState.addProjectile(new Projectile(this.x+this.w, this.y+this.h/2-5, 10, 10, 'rgba('+String(255*(1-this.player))+',50,'+String(255*this.player)+',.8)', 6, this.player));
+			if(this.projectiles < this.maxProj) {
+				myState.addProjectile(new Projectile(this.x+this.w, this.y+this.h/2-5, 10, 10, 'rgba('+String(255*(1-this.player))+',50,'+String(255*this.player)+',.8)', projSpeed, this.player));
 				this.projectiles++;
 			}
 		}
 		p.fireleft = function() {
-			if(this.projectiles < maxProj) {
-				myState.addProjectile(new Projectile(this.x, this.y+this.h/2-5, 10, 10, 'rgba('+String(255*(1-this.player))+',50,'+String(255*this.player)+',.8)', -6, this.player));
+			if(this.projectiles < this.maxProj) {
+				myState.addProjectile(new Projectile(this.x-this.w/2, this.y+this.h/2-5, 10, 10, 'rgba('+String(255*(1-this.player))+',50,'+String(255*this.player)+',.8)', -projSpeed, this.player));
 				this.projectiles++;
 			}
 			//console.log(this.player, this.projectiles)
@@ -122,6 +126,7 @@ Player = function(x, y, w, h, fill, speed, player) {
 	this.projectiles = 0;
 	this.hp = maxhp;
 	this.lives = maxlives;
+	this.maxProj = maxProj;
 	this.left = false;
 	this.right = false;
 	this.jumping = false;
@@ -187,18 +192,18 @@ function CanvasState(canvas) {
 	//fixes a problem where double clicking causes text to get selected on the canvas
 	canvas.addEventListener('selectstart', function(e) { e.preventDefault(); return false; }, false);
 	this.addPlayer(new Player(10,100,20,20,'rgba(255,0,0,.6)', playerSpeed, 0));
-	this.addPlayer(new Player(canvas.width-10,100,20,20,'rgba(0,0,255,.6)', playerSpeed, 1));
+	this.addPlayer(new Player(canvas.width-30,100,20,20,'rgba(0,0,255,.6)', playerSpeed, 1));
 	this.blitHp(this.players[0]);
 	this.blitHp(this.players[1]);
 	this.addCollidable(new Shape(370,550,80,20,'rgba(0,0,0,.6)'));
 	this.addCollidable(new Shape(460,500,80,20,'rgba(0,0,0,.6)'));
 	this.addCollidable(new Shape(550,550,80,20,'rgba(0,0,0,.6)'));
 	
-	this.drawFrequency = 30;
+	this.drawFrequency = drawFrequency;
 	this.drawInterval = setInterval(function() { myState.draw(); }, myState.drawFrequency);
 
-	this.physFrequency = 30;
-	this.physInterval = setInterval(function() { myState.update(myState.physFrequency/1000); }, myState.physFrequency); 
+	this.physFrequency = physFrequency;
+	this.physInterval = setInterval(function() { myState.update(myState.physFrequency); }, myState.physFrequency); 
 	
 	this.ruleFrequency = ruleFrequency*1000;
 	this.ruleInterval = setInterval(function() { pushRule(); }, myState.ruleFrequency);
@@ -259,15 +264,15 @@ CanvasState.prototype.update = function(dt) {
 		if(shape.mobile) {
 			shape.lastx=shape.x;
 			shape.lasty=shape.y;
-			shape.yv+=shape.ya;
-			shape.y+=shape.yv;
+			shape.yv+=shape.ya*dt/stdIntval;
+			shape.y+=shape.yv*dt/stdIntval;
 			if(shape.yv>19)
 				shape.yv=19; //no falling through blocks!
 			if(shape.left) {
-				shape.x-=shape.speed;
+				shape.x-=shape.speed*dt/stdIntval;
 			}
 			else if(shape.right) {
-				shape.x+=shape.speed;
+				shape.x+=shape.speed*dt/stdIntval;
 			}
 			for (var j = 0; j < players.length+collidables.length; j++) {
 				if(j>=players.length)
@@ -410,8 +415,11 @@ drawobjects = function (array) {
 		if (shape.x > myState.width || shape.y > myState.height ||
 			shape.x + shape.w < 0 || shape.y + shape.h < 0) {
 			x=array[i]
-			if(x.player!=null)
+			if(x.player!=null) {
 				myState.players[x.player].projectiles--;
+				if (myState.players[x.player].projectiles<0)
+					myState.players[x.player].projectiles=0;
+			}
 			array.splice(i,1);
 			console.log("Out of bounds shape removed");
 			continue;
